@@ -13,7 +13,7 @@ public class BoundSoulMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ModItems.registerModItems();
+        ModItems.register();
         LOGGER.info("Bound Soul mod initialized");
     }
 
