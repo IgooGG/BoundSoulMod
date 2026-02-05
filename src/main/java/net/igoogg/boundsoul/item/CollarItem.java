@@ -24,13 +24,21 @@ public class CollarItem extends Item {
         if (world.isClient) return InteractionResult.SUCCESS;
 
         NbtCompound nbt = stack.getOrCreateNbt();
+
         if (isLocked(stack)) {
             user.sendMessage(BoundSoulMod.literal("This collar is already locked!"), true);
             return InteractionResult.CONSUME;
         }
 
+        // Set the owner and target
         nbt.putUuid("Owner", user.getUuid());
         nbt.putUuid("Target", entity.getUuid());
+
+        // Feedback messages
+        user.sendMessage(BoundSoulMod.literal("You have put a collar on " + entity.getName().getString()), true);
+        if (entity instanceof Player targetPlayer) {
+            targetPlayer.sendMessage(BoundSoulMod.literal("You have been collared by " + user.getName().getString()), true);
+        }
 
         return InteractionResult.CONSUME;
     }
