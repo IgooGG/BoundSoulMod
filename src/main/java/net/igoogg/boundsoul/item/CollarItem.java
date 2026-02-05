@@ -1,10 +1,14 @@
 package net.igoogg.boundsoul.item;
 
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
@@ -16,27 +20,45 @@ public class CollarItem extends Item {
     }
 
     @Override
-    public boolean useOnEntity(ItemStack stack, PlayerEntity user, net.minecraft.entity.LivingEntity entity, Hand hand) {
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+        return TypedActionResult.pass(user.getStackInHand(hand));
+    }
+
+    @Override
+    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         if (!(entity instanceof PlayerEntity target)) {
-            return false;
+            return ActionResult.PASS;
         }
 
         if (user.getWorld().isClient) {
-            return true;
+            return ActionResult.SUCCESS;
         }
 
-        // Prevent re-binding
-        if (stack.hasNbt() && stack.getNbt().contains("Owner")) {
+        // Get or create custom data
+        NbtCompound data = stack
+                .getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT)
+                .copyNbt();
+
+        // Prevent rebinding
+        if (data.contains("Owner")) {
             user.sendMessage(Text.literal("This collar is already bound."), false);
-            return true;
+            return ActionResult.SUCCESS;
         }
 
-        stack.getOrCreateNbt().putUuid("Owner", user.getUuid());
-        stack.getOrCreateNbt().putUuid("Target", target.getUuid());
+        data.putUuid("Owner", user.getUuid());
+        data.putUuid("Target", target.getUuid());
 
-        user.sendMessage(Text.literal("You placed a collar on " + target.getName().getString()), false);
-        target.sendMessage(Text.literal("You have been collared."), false);
+        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(data));
 
-        return true;
+        user.sendMessage(
+                Text.literal("You placed a collar on " + target.getName().getString()),
+                false
+        );
+        target.sendMessage(
+                Text.literal("You have been collared."),
+                false
+        );
+
+        return ActionResult.SUCCESS;
     }
 }
