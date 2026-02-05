@@ -30,7 +30,8 @@ public class CollarItem extends Item {
 
         if (user.getWorld().isClient) return ActionResult.SUCCESS;
 
-        NbtCompound nbt = stack.getOrCreateNbt(); // ✅ This works in 1.21.1
+        NbtCompound nbt = stack.getNbt(); // get existing NBT
+        if (nbt == null) nbt = new NbtCompound(); // create if missing
 
         if (nbt.contains("Locked") && nbt.getBoolean("Locked")) {
             user.sendMessage(Text.literal("This collar is locked and cannot be removed."), false);
@@ -39,9 +40,9 @@ public class CollarItem extends Item {
 
         nbt.putUuid("Owner", user.getUuid());
         nbt.putUuid("Target", target.getUuid());
-        nbt.putBoolean("Locked", true); // ⚡ lock forever
+        nbt.putBoolean("Locked", true); // lock forever
 
-        stack.setNbt(nbt);
+        stack.setTag(nbt); // ✅ attach NBT
 
         user.sendMessage(
                 Text.literal("You placed a collar on " + target.getName().getString() + " (locked forever)"),
