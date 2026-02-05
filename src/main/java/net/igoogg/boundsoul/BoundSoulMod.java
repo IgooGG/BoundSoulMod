@@ -3,6 +3,8 @@ package net.igoogg.boundsoul;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.igoogg.boundsoul.item.ModItems;
+
 
 public class BoundSoulMod implements ModInitializer {
 
@@ -11,6 +13,8 @@ public class BoundSoulMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        ModItems.registerModItems();
         LOGGER.info("Bound Soul mod initialized");
     }
+
 }
