@@ -41,8 +41,9 @@ tasks.withType(JavaCompile).configureEach {
     targetCompatibility = '21'
 }
 
+// Loom block remains empty (or just leave other Loom configs if needed)
 loom {
-    javaVersion = 21
+    // no javaVersion here
 }
 
 processResources {
