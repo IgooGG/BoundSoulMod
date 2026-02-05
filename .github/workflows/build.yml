@@ -1,4 +1,4 @@
-name: Build Gradle Project
+name: Gradle Build
 
 on:
   push:
@@ -11,25 +11,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the repository
+      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Ensure gradlew is executable
+      # 2. Set up JDK
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3. Ensure gradlew is executable (if using Gradle wrapper)
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # 3. Clean Gradle project
+      # 4. Clean project and remove caches
       - name: Clean project
         run: |
           ./gradlew clean
           rm -rf .gradle/loom-cache
           rm -rf .gradle/caches
 
-      # 4. Build the project
+      # 5. Build the project
       - name: Build project
         run: ./gradlew build
 
-      # Optional: Run tests
+      # 6. Run tests
       - name: Run tests
         run: ./gradlew test
