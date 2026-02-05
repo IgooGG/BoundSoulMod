@@ -1,6 +1,5 @@
 package net.igoogg.boundsoul.item;
 
-import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.igoogg.boundsoul.BoundSoulMod;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
@@ -10,7 +9,7 @@ import net.minecraft.util.Identifier;
 public class ModItems {
 
     public static final Item COLLAR =
-            register("collar", new CollarItem(new FabricItemSettings().maxCount(1)));
+            register("collar", new CollarItem(new Item.Settings().maxCount(1)));
 
     public static void register() {
         // static init is enough
