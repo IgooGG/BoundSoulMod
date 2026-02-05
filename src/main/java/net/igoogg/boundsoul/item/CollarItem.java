@@ -1,8 +1,5 @@
 package net.igoogg.boundsoul.item;
 
-import net.minecraft.component.ComponentProvider;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -33,27 +30,18 @@ public class CollarItem extends Item {
 
         if (user.getWorld().isClient) return ActionResult.SUCCESS;
 
-        // Get the custom data component
-        NbtCompound data;
-        if (stack.hasComponent(DataComponentTypes.CUSTOM_DATA)) {
-            NbtComponent comp = stack.getComponent(DataComponentTypes.CUSTOM_DATA);
-            data = comp.copyNbt();
-        } else {
-            data = new NbtCompound();
-        }
+        NbtCompound nbt = stack.getOrCreateNbt(); // ✅ This works in 1.21.1
 
-        // Prevent rebinding if locked
-        if (data.contains("Locked") && data.getBoolean("Locked")) {
+        if (nbt.contains("Locked") && nbt.getBoolean("Locked")) {
             user.sendMessage(Text.literal("This collar is locked and cannot be removed."), false);
             return ActionResult.SUCCESS;
         }
 
-        // Bind collar and lock
-        data.putUuid("Owner", user.getUuid());
-        data.putUuid("Target", target.getUuid());
-        data.putBoolean("Locked", true);
+        nbt.putUuid("Owner", user.getUuid());
+        nbt.putUuid("Target", target.getUuid());
+        nbt.putBoolean("Locked", true); // ⚡ lock forever
 
-        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(data));
+        stack.setNbt(nbt);
 
         user.sendMessage(
                 Text.literal("You placed a collar on " + target.getName().getString() + " (locked forever)"),
