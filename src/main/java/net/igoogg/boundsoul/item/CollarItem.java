@@ -1,5 +1,6 @@
 package net.igoogg.boundsoul.item;
 
+import net.minecraft.component.ComponentProvider;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.LivingEntity;
@@ -30,14 +31,16 @@ public class CollarItem extends Item {
             return ActionResult.PASS;
         }
 
-        if (user.getWorld().isClient) {
-            return ActionResult.SUCCESS;
-        }
+        if (user.getWorld().isClient) return ActionResult.SUCCESS;
 
-        // Get or create custom data
-        NbtCompound data = stack
-                .getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT)
-                .copyNbt();
+        // Get the custom data component
+        NbtCompound data;
+        if (stack.hasComponent(DataComponentTypes.CUSTOM_DATA)) {
+            NbtComponent comp = stack.getComponent(DataComponentTypes.CUSTOM_DATA);
+            data = comp.copyNbt();
+        } else {
+            data = new NbtCompound();
+        }
 
         // Prevent rebinding if locked
         if (data.contains("Locked") && data.getBoolean("Locked")) {
@@ -45,10 +48,10 @@ public class CollarItem extends Item {
             return ActionResult.SUCCESS;
         }
 
-        // Bind collar
+        // Bind collar and lock
         data.putUuid("Owner", user.getUuid());
         data.putUuid("Target", target.getUuid());
-        data.putBoolean("Locked", true); // ⚡ LOCK IT FOREVER
+        data.putBoolean("Locked", true);
 
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(data));
 
@@ -56,23 +59,8 @@ public class CollarItem extends Item {
                 Text.literal("You placed a collar on " + target.getName().getString() + " (locked forever)"),
                 false
         );
-        target.sendMessage(
-                Text.literal("You have been collared."),
-                false
-        );
+        target.sendMessage(Text.literal("You have been collared."), false);
 
         return ActionResult.SUCCESS;
     }
-    @Override
-    public boolean canBeDropped(ItemStack stack, PlayerEntity player) {
-        NbtCompound data = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
-        return !(data.contains("Locked") && data.getBoolean("Locked"));
-    }
-
-    @Override
-    public boolean isEnchantable(ItemStack stack) {
-        // Optional: prevent modification
-        return false;
-    }
-
 }
