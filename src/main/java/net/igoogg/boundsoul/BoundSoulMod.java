@@ -1,10 +1,10 @@
 package net.igoogg.boundsoul;
 
 import net.fabricmc.api.ModInitializer;
+import net.igoogg.boundsoul.item.ModItems;
+import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.igoogg.boundsoul.item.ModItems;
-
 
 public class BoundSoulMod implements ModInitializer {
 
@@ -17,4 +17,8 @@ public class BoundSoulMod implements ModInitializer {
         LOGGER.info("Bound Soul mod initialized");
     }
 
+    // ✅ REQUIRED by CollarItem
+    public static Text literal(String text) {
+        return Text.literal(text);
+    }
 }
