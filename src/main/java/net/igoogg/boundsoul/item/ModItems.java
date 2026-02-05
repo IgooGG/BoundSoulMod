@@ -7,7 +7,6 @@ import net.minecraft.item.ItemGroups;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
-import net.igoogg.boundsoul.item.CollarItem;
 
 public class ModItems {
 
@@ -19,18 +18,18 @@ public class ModItems {
     private static Item registerItem(String name, Item item) {
         Item registered = Registry.register(
                 Registries.ITEM,
-                new Identifier(BoundSoulMod.MOD_ID, name),
+                Identifier.of(BoundSoulMod.MOD_ID, name),
                 item
         );
 
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
-            entries.add(registered);
-        });
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries ->
+                entries.add(registered)
+        );
 
         return registered;
     }
 
-    public static void registerModItems() {
-        BoundSoulMod.LOGGER.info("Registering items for Bound Soul");
+    public static void register() {
+        // called from main mod class
     }
 }
