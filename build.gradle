@@ -32,12 +32,17 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17) // Java 17 for 1.21.1
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 17
+    sourceCompatibility = '21'
+    targetCompatibility = '21'
+}
+
+loom {
+    javaVersion = 21
 }
 
 processResources {
