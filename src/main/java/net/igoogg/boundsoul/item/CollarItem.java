@@ -1,58 +1,56 @@
 package net.igoogg.boundsoul.item;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.igoogg.boundsoul.BoundSoulMod;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.world.World;
 
 import java.util.UUID;
 
 public class CollarItem extends Item {
 
-    public CollarItem(Properties settings) {
+    public CollarItem(Settings settings) {
         super(settings);
     }
 
     @Override
-    public InteractionResult interactLivingEntity(ItemStack stack, Player user, LivingEntity target, InteractionHand hand) {
-        Level world = user.level();
-        if (world.isClientSide) return InteractionResult.SUCCESS;
+    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+        World world = user.getWorld();
+        if (world.isClient) return ActionResult.SUCCESS;
 
-        CompoundTag nbt = stack.getOrCreateTag();
+        NbtCompound nbt = stack.getOrCreateNbt();
 
-        if (isLocked(stack)) {
-            user.displayClientMessage(BoundSoulMod.literal("This collar is already locked!"), true);
-            return InteractionResult.CONSUME;
+        if (nbt.getBoolean("Locked")) {
+            user.sendMessage(BoundSoulMod.literal("This collar is already locked!"), true);
+            return ActionResult.CONSUME;
         }
 
-        nbt.putUUID("Owner", user.getUUID());
-        nbt.putUUID("Target", target.getUUID());
+        nbt.putBoolean("Locked", true);
+        nbt.putUuid("Owner", user.getUuid());
+        nbt.putUuid("Target", entity.getUuid());
 
-        user.displayClientMessage(BoundSoulMod.literal("You have put a collar on " + target.getName().getString()), true);
-        if (target instanceof Player targetPlayer) {
-            targetPlayer.displayClientMessage(BoundSoulMod.literal("You have been collared by " + user.getName().getString()), true);
-        }
+        user.sendMessage(
+                BoundSoulMod.literal("You have put a collar on " + entity.getName().getString()),
+                true
+        );
 
-        return InteractionResult.CONSUME;
+        return ActionResult.CONSUME;
     }
 
     public static boolean isLocked(ItemStack stack) {
-        CompoundTag nbt = stack.getTag();
-        return nbt != null && nbt.hasUUID("Target");
+        return stack.hasNbt() && stack.getNbt().getBoolean("Locked");
     }
 
     public static UUID getOwner(ItemStack stack) {
-        CompoundTag nbt = stack.getTag();
-        return nbt != null ? nbt.getUUID("Owner") : null;
+        return stack.getNbt() != null ? stack.getNbt().getUuid("Owner") : null;
     }
 
     public static UUID getTarget(ItemStack stack) {
-        CompoundTag nbt = stack.getTag();
-        return nbt != null ? nbt.getUUID("Target") : null;
+        return stack.getNbt() != null ? stack.getNbt().getUuid("Target") : null;
     }
 }
