@@ -11,6 +11,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
@@ -23,7 +24,7 @@ public class ShockerItem extends Item {
         super(settings);
     }
 
-    /* ================= SHOCK AIR ================= */
+    /* ================= RIGHT CLICK AIR ================= */
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
@@ -33,7 +34,7 @@ public class ShockerItem extends Item {
             return TypedActionResult.success(stack);
         }
 
-        NbtCompound nbt = get(stack);
+        NbtCompound nbt = getNbt(stack);
         if (nbt == null || !nbt.containsUuid("Target")) {
             user.sendMessage(BoundSoulMod.literal("No target bound."), true);
             return TypedActionResult.fail(stack);
@@ -53,24 +54,25 @@ public class ShockerItem extends Item {
         return TypedActionResult.success(stack);
     }
 
-    /* ================= BIND TO COLLARED PLAYER ================= */
+    /* ================= RIGHT CLICK PLAYER ================= */
 
     @Override
-    public boolean useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
-        if (!(entity instanceof PlayerEntity target)) return false;
+    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+        if (!(entity instanceof PlayerEntity target)) return ActionResult.PASS;
         World world = user.getWorld();
-        if (world.isClient) return true;
+
+        if (world.isClient) return ActionResult.SUCCESS;
 
         ItemStack collar = CollarItem.findCollar(target);
         if (collar == null) {
             user.sendMessage(BoundSoulMod.literal("Target is not collared."), true);
-            return true;
+            return ActionResult.FAIL;
         }
 
         UUID owner = CollarItem.getOwner(collar);
         if (!user.getUuid().equals(owner)) {
             user.sendMessage(BoundSoulMod.literal("You are not the owner."), true);
-            return true;
+            return ActionResult.FAIL;
         }
 
         NbtCompound nbt = new NbtCompound();
@@ -82,7 +84,7 @@ public class ShockerItem extends Item {
                 true
         );
 
-        return true;
+        return ActionResult.SUCCESS;
     }
 
     /* ================= EFFECT ================= */
@@ -95,7 +97,7 @@ public class ShockerItem extends Item {
 
     /* ================= NBT ================= */
 
-    private static NbtCompound get(ItemStack stack) {
+    private static NbtCompound getNbt(ItemStack stack) {
         NbtComponent c = stack.get(DataComponentTypes.CUSTOM_DATA);
         return c != null ? c.copyNbt() : null;
     }
