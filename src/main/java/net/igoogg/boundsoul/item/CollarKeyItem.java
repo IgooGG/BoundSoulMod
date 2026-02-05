@@ -25,20 +25,20 @@ public class CollarKeyItem extends Item {
 
         ItemStack collar = CollarItem.findCollar(targetPlayer);
         if (collar == null) {
-            user.sendMessage(BoundSoulMod.literal("No collar found."), true);
+            user.sendMessage(Text.literal("No collar found."), true);
             return ActionResult.CONSUME;
         }
 
         UUID owner = CollarItem.getOwner(collar);
         if (!user.getUuid().equals(owner)) {
-            user.sendMessage(BoundSoulMod.literal("You are not the owner."), true);
+            user.sendMessage(Text.literal("You are not the owner."), true);
             return ActionResult.CONSUME;
         }
 
         targetPlayer.getInventory().removeOne(collar);
 
-        user.sendMessage(BoundSoulMod.literal("Collar unlocked."), true);
-        targetPlayer.sendMessage(BoundSoulMod.literal("Your collar has been removed."), true);
+        user.sendMessage(Text.literal("Collar unlocked."), true);
+        targetPlayer.sendMessage(Text.literal("Your collar has been removed."), true);
 
         return ActionResult.CONSUME;
     }
