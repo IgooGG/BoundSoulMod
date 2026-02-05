@@ -1,20 +1,21 @@
 plugins {
     id 'fabric-loom' version '1.14.10'
     id 'maven-publish'
+    id 'base' // <-- required for archivesName
 }
 
-// Basic project info
 group = project.maven_group
 version = project.mod_version
-archivesBaseName = project.archives_base_name
 
-// Repositories
+base {
+    archivesName = project.archives_base_name
+}
+
 repositories {
     mavenCentral()
     maven { url = "https://maven.fabricmc.net/" }
 }
 
-// Dependencies
 dependencies {
     // Minecraft version
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
@@ -29,32 +30,20 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
 
-// Java toolchain
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17) // Must be 17 for Minecraft 1.21.1
+        languageVersion = JavaLanguageVersion.of(17) // Java 17 for 1.21.1
     }
 }
 
-// Compile options
 tasks.withType(JavaCompile).configureEach {
     it.options.release = 17
 }
 
-// Process resources for version replacement in fabric.mod.json
 processResources {
     inputs.property "version", project.version
 
     filesMatching("fabric.mod.json") {
         expand "version": project.version
-    }
-}
-
-// Optional: Maven publishing setup (if you plan to publish your mod)
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
     }
 }
