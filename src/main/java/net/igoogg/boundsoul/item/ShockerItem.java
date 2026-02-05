@@ -1,16 +1,11 @@
 package net.igoogg.boundsoul.item;
 
-import net.igoogg.boundsoul.BoundSoulMod;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
@@ -20,85 +15,72 @@ import java.util.UUID;
 
 public class ShockerItem extends Item {
 
+    public static final String TARGET_KEY = "Target";
+
     public ShockerItem(Settings settings) {
         super(settings);
     }
 
-    /* ================= RIGHT CLICK AIR ================= */
-
+    /* ==== RIGHT CLICK AIR: SHOCK ==== */
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        ItemStack stack = user.getStackInHand(hand);
-
-        if (world.isClient) {
-            return TypedActionResult.success(stack);
+        if (world.isClient || !(user instanceof ServerPlayerEntity player)) {
+            return TypedActionResult.success(user.getStackInHand(hand));
         }
 
-        NbtCompound nbt = getNbt(stack);
-        if (nbt == null || !nbt.containsUuid("Target")) {
-            user.sendMessage(BoundSoulMod.literal("No target bound."), true);
+        ItemStack stack = user.getStackInHand(hand);
+        if (!stack.hasNbt() || !stack.getNbt().containsUuid(TARGET_KEY)) {
+            player.sendMessage(Text.literal("§cNo player bound to this shocker"), false);
             return TypedActionResult.fail(stack);
         }
 
+        UUID targetId = stack.getNbt().getUuid(TARGET_KEY);
         ServerPlayerEntity target =
-                world.getServer().getPlayerManager().getPlayer(nbt.getUuid("Target"));
+                player.getServer().getPlayerManager().getPlayer(targetId);
 
         if (target == null) {
-            user.sendMessage(BoundSoulMod.literal("Target offline."), true);
+            player.sendMessage(Text.literal("§cBound player is offline"), false);
             return TypedActionResult.fail(stack);
         }
 
-        shock(target);
-        user.sendMessage(BoundSoulMod.literal("⚡ Shock delivered."), true);
+        target.damage(target.getDamageSources().magic(), 2.0f);
+        target.sendMessage(Text.literal("§4You are shocked!"), false);
+        player.sendMessage(
+                Text.literal("§eYou shocked §f" + target.getName().getString()),
+                false
+        );
 
         return TypedActionResult.success(stack);
     }
 
-    /* ================= RIGHT CLICK PLAYER ================= */
-
+    /* ==== RIGHT CLICK PLAYER: BIND ==== */
     @Override
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
-        if (!(entity instanceof PlayerEntity target)) return ActionResult.PASS;
-        World world = user.getWorld();
+        if (user.getWorld().isClient) return ActionResult.SUCCESS;
+        if (!(user instanceof ServerPlayerEntity owner)) return ActionResult.PASS;
+        if (!(entity instanceof ServerPlayerEntity target)) return ActionResult.PASS;
 
-        if (world.isClient) return ActionResult.SUCCESS;
+        ItemStack collar = target.getInventory().main.stream()
+                .filter(s -> s.getItem() instanceof CollarItem)
+                .findFirst()
+                .orElse(ItemStack.EMPTY);
 
-        ItemStack collar = CollarItem.findCollar(target);
-        if (collar == null) {
-            user.sendMessage(BoundSoulMod.literal("Target is not collared."), true);
+        if (collar.isEmpty() || !CollarItem.isLocked(collar)) {
+            owner.sendMessage(Text.literal("§cTarget is not collared"), false);
             return ActionResult.FAIL;
         }
 
-        UUID owner = CollarItem.getOwner(collar);
-        if (!user.getUuid().equals(owner)) {
-            user.sendMessage(BoundSoulMod.literal("You are not the owner."), true);
-            return ActionResult.FAIL;
-        }
+        stack.getOrCreateNbt().putUuid(TARGET_KEY, target.getUuid());
 
-        NbtCompound nbt = new NbtCompound();
-        nbt.putUuid("Target", target.getUuid());
-        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
-
-        user.sendMessage(
-                BoundSoulMod.literal("Shocker bound to " + target.getName().getString()),
-                true
+        owner.sendMessage(
+                Text.literal("§aShocker bound to §f" + target.getName().getString()),
+                false
+        );
+        target.sendMessage(
+                Text.literal("§cA shocker has been bound to you"),
+                false
         );
 
         return ActionResult.SUCCESS;
-    }
-
-    /* ================= EFFECT ================= */
-
-    private static void shock(PlayerEntity target) {
-        target.damage(target.getWorld().getDamageSources().magic(), 4.0F);
-        target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 2));
-        target.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 60, 1));
-    }
-
-    /* ================= NBT ================= */
-
-    private static NbtCompound getNbt(ItemStack stack) {
-        NbtComponent c = stack.get(DataComponentTypes.CUSTOM_DATA);
-        return c != null ? c.copyNbt() : null;
     }
 }
