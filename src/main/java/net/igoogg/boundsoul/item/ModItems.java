@@ -1,12 +1,10 @@
 package net.igoogg.boundsoul.item;
 
 import net.igoogg.boundsoul.BoundSoulMod;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.core.Identifier;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Item.Properties;
-import net.minecraft.world.item.Items;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.Item;
 
 public class ModItems {
 
@@ -17,6 +15,6 @@ public class ModItems {
     }
 
     public static void register() {
-        // Items are registered statically above, call this to ensure class is loaded
+        // Ensures class is loaded
     }
 }
