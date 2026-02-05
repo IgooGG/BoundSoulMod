@@ -11,8 +11,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 import java.util.UUID;
@@ -23,17 +23,20 @@ public class ShockerItem extends Item {
         super(settings);
     }
 
-    /* Shock air */
+    /* ================= SHOCK AIR ================= */
+
     @Override
-    public ActionResult use(World world, PlayerEntity user, Hand hand) {
-        if (world.isClient) return ActionResult.SUCCESS;
-
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
-        NbtCompound nbt = get(stack);
 
+        if (world.isClient) {
+            return TypedActionResult.success(stack);
+        }
+
+        NbtCompound nbt = get(stack);
         if (nbt == null || !nbt.containsUuid("Target")) {
             user.sendMessage(BoundSoulMod.literal("No target bound."), true);
-            return ActionResult.CONSUME;
+            return TypedActionResult.fail(stack);
         }
 
         ServerPlayerEntity target =
@@ -41,44 +44,56 @@ public class ShockerItem extends Item {
 
         if (target == null) {
             user.sendMessage(BoundSoulMod.literal("Target offline."), true);
-            return ActionResult.CONSUME;
+            return TypedActionResult.fail(stack);
         }
 
         shock(target);
         user.sendMessage(BoundSoulMod.literal("⚡ Shock delivered."), true);
 
-        return ActionResult.CONSUME;
+        return TypedActionResult.success(stack);
     }
 
-    /* Bind to player */
+    /* ================= BIND TO COLLARED PLAYER ================= */
+
     @Override
-    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
-        if (!(entity instanceof PlayerEntity target)) return ActionResult.PASS;
+    public boolean useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+        if (!(entity instanceof PlayerEntity target)) return false;
         World world = user.getWorld();
-        if (world.isClient) return ActionResult.SUCCESS;
+        if (world.isClient) return true;
 
         ItemStack collar = CollarItem.findCollar(target);
-        if (collar == null) return ActionResult.PASS;
+        if (collar == null) {
+            user.sendMessage(BoundSoulMod.literal("Target is not collared."), true);
+            return true;
+        }
 
-        if (!user.getUuid().equals(CollarItem.getOwner(collar))) {
+        UUID owner = CollarItem.getOwner(collar);
+        if (!user.getUuid().equals(owner)) {
             user.sendMessage(BoundSoulMod.literal("You are not the owner."), true);
-            return ActionResult.CONSUME;
+            return true;
         }
 
         NbtCompound nbt = new NbtCompound();
         nbt.putUuid("Target", target.getUuid());
-
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
 
-        user.sendMessage(BoundSoulMod.literal("Shocker bound to " + target.getName().getString()), true);
-        return ActionResult.CONSUME;
+        user.sendMessage(
+                BoundSoulMod.literal("Shocker bound to " + target.getName().getString()),
+                true
+        );
+
+        return true;
     }
+
+    /* ================= EFFECT ================= */
 
     private static void shock(PlayerEntity target) {
         target.damage(target.getWorld().getDamageSources().magic(), 4.0F);
         target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 2));
         target.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 60, 1));
     }
+
+    /* ================= NBT ================= */
 
     private static NbtCompound get(ItemStack stack) {
         NbtComponent c = stack.get(DataComponentTypes.CUSTOM_DATA);
