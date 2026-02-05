@@ -39,19 +39,21 @@ public class CollarItem extends Item {
                 .getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT)
                 .copyNbt();
 
-        // Prevent rebinding
-        if (data.contains("Owner")) {
-            user.sendMessage(Text.literal("This collar is already bound."), false);
+        // Prevent rebinding if locked
+        if (data.contains("Locked") && data.getBoolean("Locked")) {
+            user.sendMessage(Text.literal("This collar is locked and cannot be removed."), false);
             return ActionResult.SUCCESS;
         }
 
+        // Bind collar
         data.putUuid("Owner", user.getUuid());
         data.putUuid("Target", target.getUuid());
+        data.putBoolean("Locked", true); // ⚡ LOCK IT FOREVER
 
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(data));
 
         user.sendMessage(
-                Text.literal("You placed a collar on " + target.getName().getString()),
+                Text.literal("You placed a collar on " + target.getName().getString() + " (locked forever)"),
                 false
         );
         target.sendMessage(
@@ -61,4 +63,16 @@ public class CollarItem extends Item {
 
         return ActionResult.SUCCESS;
     }
+    @Override
+    public boolean canBeDropped(ItemStack stack, PlayerEntity player) {
+        NbtCompound data = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
+        return !(data.contains("Locked") && data.getBoolean("Locked"));
+    }
+
+    @Override
+    public boolean isEnchantable(ItemStack stack) {
+        // Optional: prevent modification
+        return false;
+    }
+
 }
