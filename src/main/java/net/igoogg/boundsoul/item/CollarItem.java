@@ -1,67 +1,65 @@
 package net.igoogg.boundsoul.item;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
+import net.igoogg.boundsoul.BoundSoulMod;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.level.Level;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.world.entity.LivingEntity;
+
+import java.util.UUID;
 
 public class CollarItem extends Item {
 
-    public CollarItem(Settings settings) {
-        super(settings);
+    public CollarItem(Item.Properties properties) {
+        super(properties);
     }
 
-    /**
-     * Called when the player uses the item on another entity.
-     */
+    // Called when player right-clicks on an entity with this item
     @Override
-    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
-        // Only allow placing on players
-        if (!(entity instanceof PlayerEntity target)) return ActionResult.PASS;
+    public InteractionResult interactLivingEntity(ItemStack stack, Player user, LivingEntity target, InteractionHand hand) {
+        if (user.level.isClientSide) return InteractionResult.SUCCESS; // only run on server
 
-        // Client-side early exit
-        if (user.getWorld().isClient) return ActionResult.SUCCESS;
+        // Lock collar permanently
+        NbtCompound nbt = stack.getNbt();
+        if (nbt == null) nbt = new NbtCompound();
 
-        NbtCompound nbt = stack.getOrCreateNbt();
-
-        // Check if collar is already locked
-        if (nbt.contains("Locked") && nbt.getBoolean("Locked")) {
-            user.sendMessage(Text.literal("This collar is locked and cannot be removed."), false);
-            return ActionResult.SUCCESS;
+        if (!nbt.contains("Owner")) {
+            nbt.putUuid("Owner", user.getUUID());
+            nbt.putUuid("Target", target.getUUID());
+            stack.setNbt(nbt); // attach NBT back to stack
+            user.sendMessage(BoundSoulMod.literal("Collar locked to " + target.getName().getString()), true);
+        } else {
+            user.sendMessage(BoundSoulMod.literal("This collar is already locked!"), true);
         }
 
-        // Set ownership and lock
-        nbt.putUuid("Owner", user.getUuid());
-        nbt.putUuid("Target", target.getUuid());
-        nbt.putBoolean("Locked", true); // lock forever
-
-        // Notify players
-        user.sendMessage(Text.literal("You placed a collar on " + target.getName().getString() + " (locked forever)"), false);
-        target.sendMessage(Text.literal("You have been collared."), false);
-
-        return ActionResult.SUCCESS;
+        return InteractionResult.CONSUME;
     }
 
-    /**
-     * Helper: check if an ItemStack is collared and locked.
-     */
+    // Check if the collar is locked
     public static boolean isLocked(ItemStack stack) {
-        if (!stack.hasNbt()) return false;
-        NbtCompound nbt = stack.getOrCreateNbt();
-        return nbt.contains("Locked") && nbt.getBoolean("Locked");
+        NbtCompound nbt = stack.getNbt();
+        return nbt != null && nbt.containsUuid("Owner") && nbt.containsUuid("Target");
     }
 
-    /**
-     * Helper: get owner UUID
-     */
-    public static java.util.UUID getTarget(ItemStack stack) {
-        if (!stack.hasNbt()) return null;
-        NbtCompound nbt = stack.getOrCreateNbt();
-        if (!nbt.containsUuid("Target")) return null;
-        return nbt.getUuid("Target");
+    // Get owner UUID
+    public static UUID getOwner(ItemStack stack) {
+        NbtCompound nbt = stack.getNbt();
+        if (nbt != null && nbt.containsUuid("Owner")) {
+            return nbt.getUuid("Owner");
+        }
+        return null;
+    }
+
+    // Get target UUID
+    public static UUID getTarget(ItemStack stack) {
+        NbtCompound nbt = stack.getNbt();
+        if (nbt != null && nbt.containsUuid("Target")) {
+            return nbt.getUuid("Target");
+        }
+        return null;
     }
 }
