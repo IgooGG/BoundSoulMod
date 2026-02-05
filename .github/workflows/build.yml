@@ -3,8 +3,10 @@ name: Gradle Build
 on:
   push:
     branches:
-      - main
+      - master   # updated from 'main' to 'master'
   pull_request:
+    branches:
+      - master
 
 jobs:
   build:
@@ -22,7 +24,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 3. Ensure gradlew is executable (if using Gradle wrapper)
+      # 3. Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
@@ -33,7 +35,7 @@ jobs:
           rm -rf .gradle/loom-cache
           rm -rf .gradle/caches
 
-      # 5. Build the project
+      # 5. Build project
       - name: Build project
         run: ./gradlew build
 
