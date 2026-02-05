@@ -1,6 +1,5 @@
 package net.igoogg.boundsoul.item;
 
-import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -21,7 +20,7 @@ public class CollarItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player user, LivingEntity target, InteractionHand hand) {
-        Level world = user.level;
+        Level world = user.level();
         if (world.isClientSide) return InteractionResult.SUCCESS;
 
         CompoundTag nbt = stack.getOrCreateTag();
@@ -31,11 +30,9 @@ public class CollarItem extends Item {
             return InteractionResult.CONSUME;
         }
 
-        // Lock collar
         nbt.putUUID("Owner", user.getUUID());
         nbt.putUUID("Target", target.getUUID());
 
-        // Feedback messages
         user.displayClientMessage(BoundSoulMod.literal("You have put a collar on " + target.getName().getString()), true);
         if (target instanceof Player targetPlayer) {
             targetPlayer.displayClientMessage(BoundSoulMod.literal("You have been collared by " + user.getName().getString()), true);
