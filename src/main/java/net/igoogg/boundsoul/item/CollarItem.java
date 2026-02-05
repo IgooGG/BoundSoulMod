@@ -58,5 +58,10 @@ public class CollarItem extends Item {
     /**
      * Helper: get owner UUID
      */
-    public static java.util.UUID getOwner(ItemStack stack) {
-        if (!stack.
+    public static java.util.UUID getTarget(ItemStack stack) {
+        if (!stack.hasNbt()) return null;
+        NbtCompound nbt = stack.getOrCreateNbt();
+        if (!nbt.containsUuid("Target")) return null;
+        return nbt.getUuid("Target");
+    }
+}
