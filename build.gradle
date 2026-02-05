@@ -1,7 +1,7 @@
 plugins {
     id 'fabric-loom' version '1.14.10'
     id 'maven-publish'
-    id 'base' // <-- required for archivesName
+    id 'base' // <-- required for archivesNames
 }
 
 group = project.maven_group
