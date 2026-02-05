@@ -1,24 +1,25 @@
 package net.igoogg.boundsoul.item;
 
+import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.igoogg.boundsoul.BoundSoulMod;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
+import net.minecraft.item.Item;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.util.Identifier;
 
 public class ModItems {
 
     public static final Item COLLAR =
-            register("collar", new CollarItem(new Item.Properties().stacksTo(1)));
+            register("collar", new CollarItem(new FabricItemSettings().maxCount(1)));
 
     public static void register() {
-        // class load is enough
+        // static init is enough
     }
 
     private static Item register(String name, Item item) {
         return Registry.register(
                 Registries.ITEM,
-                Identifier.of(BoundSoulMod.MOD_ID, name), // ✅ FIX
+                Identifier.of(BoundSoulMod.MOD_ID, name),
                 item
         );
     }
