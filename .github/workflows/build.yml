@@ -10,6 +10,11 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
+      - name: clean Gradle caches
+      run: |
+      ./gradlew clean
+      rm -rf .gradle/loom-cache
+      rm -rf .gradle/caches
       - name: checkout repository
         uses: actions/checkout@v4
       - name: validate gradle wrapper
