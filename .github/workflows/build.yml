@@ -34,6 +34,7 @@ jobs:
           ./gradlew clean
           rm -rf .gradle/loom-cache
           rm -rf .gradle/caches
+          ./gradlew --refresh-dependencies
 
       # 5. Build project
       - name: Build project
