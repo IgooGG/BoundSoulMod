@@ -1,86 +1,101 @@
 package net.igoogg.boundsoul.item;
 
-import net.igoogg.boundsoul.BoundSoulMod;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.world.World;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.UUID;
 
 public class CollarItem extends Item {
 
+    public static final String OWNER_KEY = "Owner";
+    public static final String LOCKED_KEY = "Locked";
+
     public CollarItem(Settings settings) {
         super(settings);
     }
 
-    @Override
-    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity target, Hand hand) {
-        if (!(target instanceof PlayerEntity targetPlayer)) return ActionResult.PASS;
-        World world = user.getWorld();
-        if (world.isClient) return ActionResult.SUCCESS;
-
-        NbtCompound nbt = getOrCreate(stack);
-
-        if (nbt.getBoolean("Locked")) {
-            user.sendMessage(BoundSoulMod.literal("This collar is already locked."), true);
-            return ActionResult.CONSUME;
-        }
-
-        nbt.putBoolean("Locked", true);
-        nbt.putUuid("Owner", user.getUuid());
-        nbt.putUuid("Target", targetPlayer.getUuid());
-
-        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
-
-        targetPlayer.getInventory().insertStack(stack.copy());
-        stack.decrement(1);
-
-        user.sendMessage(BoundSoulMod.literal("Collar applied."), true);
-        targetPlayer.sendMessage(BoundSoulMod.literal("You have been collared."), true);
-
-        return ActionResult.CONSUME;
-    }
-
-    /* ---------------- HELPERS ---------------- */
+    /* ================= NBT ================= */
 
     public static boolean isLocked(ItemStack stack) {
-        NbtCompound nbt = get(stack);
-        return nbt != null && nbt.getBoolean("Locked");
+        return stack.hasNbt() && stack.getNbt().getBoolean(LOCKED_KEY);
     }
 
     public static UUID getOwner(ItemStack stack) {
-        NbtCompound nbt = get(stack);
-        return nbt != null && nbt.containsUuid("Owner") ? nbt.getUuid("Owner") : null;
+        if (!stack.hasNbt()) return null;
+        return stack.getNbt().containsUuid(OWNER_KEY)
+                ? stack.getNbt().getUuid(OWNER_KEY)
+                : null;
     }
 
-    public static UUID getTarget(ItemStack stack) {
-        NbtCompound nbt = get(stack);
-        return nbt != null && nbt.containsUuid("Target") ? nbt.getUuid("Target") : null;
+    public static void bind(ItemStack stack, ServerPlayerEntity owner, ServerPlayerEntity target) {
+        NbtCompound nbt = stack.getOrCreateNbt();
+        nbt.putUuid(OWNER_KEY, owner.getUuid());
+        nbt.putBoolean(LOCKED_KEY, true);
+
+        /* ===== MESSAGES ===== */
+        owner.sendMessage(
+                Text.literal("§aYou have locked a collar onto §f" + target.getName().getString()),
+                false
+        );
+        target.sendMessage(
+                Text.literal("§cA collar has been locked onto you by §f" + owner.getName().getString()),
+                false
+        );
     }
 
-    public static ItemStack findCollar(PlayerEntity player) {
+    public static void unlock(ItemStack stack, ServerPlayerEntity owner, ServerPlayerEntity target) {
+        stack.removeSubNbt(OWNER_KEY);
+        stack.removeSubNbt(LOCKED_KEY);
+
+        owner.sendMessage(
+                Text.literal("§aYou removed the collar from §f" + target.getName().getString()),
+                false
+        );
+        target.sendMessage(
+                Text.literal("§aYour collar has been removed"),
+                false
+        );
+    }
+
+    /* ================= LEASH ================= */
+
+    public static void tickLeash(ServerPlayerEntity target) {
+        ItemStack stack = findCollar(target);
+        if (stack.isEmpty() || !isLocked(stack)) return;
+
+        UUID ownerId = getOwner(stack);
+        if (ownerId == null) return;
+
+        ServerPlayerEntity owner =
+                target.getServer().getPlayerManager().getPlayer(ownerId);
+        if (owner == null) return;
+
+        double maxDistance = 6.0;
+        Vec3d ownerPos = owner.getPos();
+        Vec3d targetPos = target.getPos();
+
+        double distance = ownerPos.distanceTo(targetPos);
+        if (distance <= maxDistance) return;
+
+        Vec3d pull = ownerPos.subtract(targetPos)
+                .normalize()
+                .multiply(0.15);
+
+        target.addVelocity(pull.x, pull.y, pull.z);
+        target.velocityModified = true;
+    }
+
+    private static ItemStack findCollar(PlayerEntity player) {
         for (ItemStack stack : player.getInventory().main) {
-            if (stack.getItem() instanceof CollarItem && isLocked(stack)) {
+            if (stack.getItem() instanceof CollarItem) {
                 return stack;
             }
         }
-        return null;
-    }
-
-    private static NbtCompound get(ItemStack stack) {
-        NbtComponent c = stack.get(DataComponentTypes.CUSTOM_DATA);
-        return c != null ? c.copyNbt() : null;
-    }
-
-    private static NbtCompound getOrCreate(ItemStack stack) {
-        NbtComponent c = stack.get(DataComponentTypes.CUSTOM_DATA);
-        return c != null ? c.copyNbt() : new NbtCompound();
+        return ItemStack.EMPTY;
     }
 }
